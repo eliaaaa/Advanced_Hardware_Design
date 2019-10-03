@@ -1,0 +1,69 @@
+1. RF falling edge wrt
+
+
+2. DMEM reading 移到 clk process 之外
+
+(大多数情况没问题, 少数情况不稳定)
+
+
+3. 各module添加clr信号
+
+(1) Decode and Controller clr 目前悬空
+
+(2) Register clr:
+	初始化: Register初始化为初始值 x"0000 0000"
+
+(3) DMEM clr: 
+	TODO: clr 用来reset input value
+
+
+4. 使用PKG!!!!!
+
+
+9.1 
+
+1. 改为16bits
+
+2. 更新TestBench
+
+问题
+(1) 指令 ADDI r20, r0, 52 会崩
+
+     imm 调小则不会崩
+     
+     16, 32, 64  均不会崩
+
+     更新DMEM越界保护解决
+
+
+(2) 跳过以上指令使用指令
+    SHL r5, r5, 16 会崩
+
+ 应该是在什么情况下访问DMEM out of bound了
+
+ 因为没有read_data信号量保护, 所有alu result均认为是address
+
+
+(3) 指令12 LW r5, 0, r3 会崩
+
+很奇怪: LW r5, 0, 4就没问题, LW r5, 0 r3, 而r3 = 4 就有问题
+
+原因: 读的是上一个cycle的address? 也不对啊, 前面的都对
+
+上一个指令改了就不会崩
+
+原因: 存在Read_Enable改了而Address没改的瞬间
+
+解决: 将DMEM扩充为64个单元
+
+DMEM[52]: input(15:0)
+DMEM[53]: input(31:16)
+DMEM[54]: input(47:32)
+DMEM[55]: input(63:48)
+DMEM[56]: input(79:64)
+DMEM[57]: input(95:72)
+DMEM[58]: input(111:96)
+DMEM[59]: input(127:112)
+
+
+
